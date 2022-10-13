@@ -227,6 +227,7 @@ header {
   padding-left: 30px;
   line-height: 20px;
   cursor: pointer;
+  align-self: flex-start;
 }
 
 .calc__checkbox {
