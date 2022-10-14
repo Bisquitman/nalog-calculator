@@ -8,6 +8,24 @@ const formatNumber = (value) => {
   }).format(value);
 };
 
+const debounceTimer = (fn, msec) => {
+  let lastCall = 0;
+  let lastCallTimer = NaN;
+
+  return (...args) => {
+    const previousCall = lastCall;
+    lastCall = Date.now();
+
+    if (previousCall && lastCall - previousCall <= msec) {
+      clearTimeout(lastCallTimer);
+    }
+
+    lastCallTimer = setTimeout(() => {
+      fn(...args);
+    }, msec);
+  };
+};
+
 //* Навигация
 const navigation = () => {
   const navigationLinks = document.querySelectorAll('.navigation__link');
@@ -53,27 +71,30 @@ const ausnCalc = () => {
 
   calcLabelExpenses.style.display = 'none';
 
-  formAusn.addEventListener('input', () => {
-    // income, expenses - значения атрибута "name" инпута формы
+  formAusn.addEventListener(
+    'input',
+    debounceTimer(() => {
+      // income, expenses - значения атрибута "name" инпута формы
 
-    if (formAusn.type.value === 'income') {
-      calcLabelExpenses.style.display = 'none';
-      formAusn.expenses.value = '';
-      resultTaxTotal.textContent =
-        formAusn.income.value * 0.08 > 0
-          ? formatNumber(formAusn.income.value * 0.08)
-          : 0;
-    }
-    if (formAusn.type.value === 'expenses') {
-      calcLabelExpenses.style.display = '';
-      resultTaxTotal.textContent =
-        (formAusn.income.value - formAusn.expenses.value) * 0.2 > 0
-          ? formatNumber(
-              (formAusn.income.value - formAusn.expenses.value) * 0.2,
-            )
-          : 0;
-    }
-  });
+      const IncomeValue = +formAusn.income.value;
+
+      if (formAusn.type.value === 'income') {
+        calcLabelExpenses.style.display = 'none';
+        formAusn.expenses.value = '';
+        resultTaxTotal.textContent =
+          IncomeValue * 0.08 > 0 ? formatNumber(IncomeValue * 0.08) : 0;
+      }
+      if (formAusn.type.value === 'expenses') {
+        calcLabelExpenses.style.display = '';
+
+        const expensesValue = +formAusn.expenses.value;
+        const profit = IncomeValue - expensesValue;
+
+        resultTaxTotal.textContent =
+          profit * 0.2 > 0 ? formatNumber(profit * 0.2) : 0;
+      }
+    }, 500),
+  );
 
   calcBtnReset.addEventListener('click', () => {
     formAusn.reset();
@@ -115,34 +136,39 @@ const selfEmploymentCalc = () => {
 
   checkCompensation();
 
-  formSelfEmployment.addEventListener('input', () => {
-    const resIndividual = formSelfEmployment.individuals.value * 0.04; // Налог на доход с физ. лиц
-    const resLegal = formSelfEmployment.legal.value * 0.06; // Налог на доход с юр. лиц
+  formSelfEmployment.addEventListener(
+    'input',
+    debounceTimer(() => {
+      const individual = +formSelfEmployment.individuals.value; // физ. лицо
+      const legal = +formSelfEmployment.legal.value; // юр. лицо
+      const resIndividual = individual * 0.04; // Налог на доход с физ. лиц
+      const resLegal = legal * 0.06; // Налог на доход с юр. лиц
 
-    checkCompensation();
+      checkCompensation();
 
-    const tax = resIndividual + resLegal; // Общий налог
-    formSelfEmployment.compensation.value =
-      formSelfEmployment.compensation.value > 10_000
-        ? 10_000
-        : formSelfEmployment.compensation.value;
-    const benefit = formSelfEmployment.compensation.value; // Налоговый вычет
-    const resBenefit =
-      formSelfEmployment.individuals.value * 0.01 +
-      formSelfEmployment.legal.value * 0.02;
-    const finalBenefit = benefit - resBenefit > 0 ? benefit - resBenefit : 0;
-    const realBenefit = benefit - finalBenefit;
-    const finalTax = tax - realBenefit; // Окончательный налог
+      const tax = resIndividual + resLegal; // Общий налог
 
-    resultTaxTotal.textContent = tax >= 0 ? formatNumber(tax) : 0;
-    resultTaxCompensation.textContent =
-      realBenefit >= 0 ? formatNumber(realBenefit) : 0;
-    resultTaxRestCompensation.textContent =
-      formSelfEmployment.compensation.value >= 0
-        ? formatNumber(formSelfEmployment.compensation.value)
-        : 0;
-    resultTaxResult.textContent = finalTax >= 0 ? formatNumber(finalTax) : 0;
-  });
+      formSelfEmployment.compensation.value =
+        +formSelfEmployment.compensation.value > 10_000
+          ? 10_000
+          : formSelfEmployment.compensation.value;
+
+      const benefit = +formSelfEmployment.compensation.value; // Налоговый вычет
+      const resBenefit = individual * 0.01 + legal * 0.02;
+      const finalBenefit = benefit - resBenefit > 0 ? benefit - resBenefit : 0;
+      const realBenefit = benefit - finalBenefit;
+      const finalTax = tax - realBenefit; // Окончательный налог
+
+      resultTaxTotal.textContent = tax >= 0 ? formatNumber(tax) : 0;
+      resultTaxCompensation.textContent =
+        realBenefit >= 0 ? formatNumber(realBenefit) : 0;
+      resultTaxRestCompensation.textContent =
+        formSelfEmployment.compensation.value >= 0
+          ? formatNumber(formSelfEmployment.compensation.value)
+          : 0;
+      resultTaxResult.textContent = finalTax >= 0 ? formatNumber(finalTax) : 0;
+    }, 500),
+  );
 
   calcBtnReset.addEventListener('click', () => {
     formSelfEmployment.reset();
@@ -187,38 +213,42 @@ const osnoCalc = () => {
   };
   checkFormBusiness();
 
-  formOsno.addEventListener('input', () => {
-    checkFormBusiness();
+  formOsno.addEventListener(
+    'input',
+    debounceTimer(() => {
+      checkFormBusiness();
 
-    const income = formOsno.income.value;
-    const expenses = formOsno.expenses.value;
-    const property = formOsno.property.value;
+      const income = +formOsno.income.value;
+      const expenses = +formOsno.expenses.value;
+      const property = +formOsno.property.value;
 
-    const profit = income - expenses;
+      const profit = income - expenses;
 
-    // НДС
-    const nds = income * 0.2;
-    resultTaxNds.textContent = nds >= 0 ? formatNumber(nds) : 0;
+      // НДС
+      const nds = income * 0.2;
+      resultTaxNds.textContent = nds >= 0 ? formatNumber(nds) : 0;
 
-    // Налог на имущество
-    const taxProperty = property * 0.02;
-    resultTaxProperty.textContent =
-      taxProperty >= 0 ? formatNumber(taxProperty) : 0;
+      // Налог на имущество
+      const taxProperty = property * 0.02;
+      resultTaxProperty.textContent =
+        taxProperty >= 0 ? formatNumber(taxProperty) : 0;
 
-    // НДФЛ(Вычет в виде расходов)
-    const ndflExpensesTotal = profit * 0.13;
-    resultTaxNdflExpenses.textContent =
-      ndflExpensesTotal >= 0 ? formatNumber(ndflExpensesTotal) : 0;
+      // НДФЛ(Вычет в виде расходов)
+      const ndflExpensesTotal = profit * 0.13;
+      resultTaxNdflExpenses.textContent =
+        ndflExpensesTotal >= 0 ? formatNumber(ndflExpensesTotal) : 0;
 
-    // НДФЛ(Вычет 20% от доходов)
-    const ndflIncomeTotal = (income - nds) * 0.13;
-    resultTaxNdflIncome.textContent =
-      ndflIncomeTotal >= 0 ? formatNumber(ndflIncomeTotal) : 0;
+      // НДФЛ(Вычет 20% от доходов)
+      const ndflIncomeTotal = (income - nds) * 0.13;
+      resultTaxNdflIncome.textContent =
+        ndflIncomeTotal >= 0 ? formatNumber(ndflIncomeTotal) : 0;
 
-    // Налог на прибыль 20%
-    const taxProfit = profit * 0.2;
-    resultTaxProfit.textContent = taxProfit >= 0 ? formatNumber(taxProfit) : 0;
-  });
+      // Налог на прибыль 20%
+      const taxProfit = profit * 0.2;
+      resultTaxProfit.textContent =
+        taxProfit >= 0 ? formatNumber(taxProfit) : 0;
+    }, 500),
+  );
 
   calcBtnReset.addEventListener('click', () => {
     formOsno.reset();
@@ -278,7 +308,7 @@ const usnCalc = () => {
 
   // через объект
   const typeTax = {
-    'income': () => {
+    income: () => {
       calcLabelExpenses.style.display = 'none';
       calcLabelProperty.style.display = 'none';
       resultBlockProperty.style.display = 'none';
@@ -304,7 +334,7 @@ const usnCalc = () => {
   // checkShowProperty(formUsn.typeTax.value);
 
   const percent = {
-    'income': 0.06,
+    income: 0.06,
     'ip-expenses': 0.15,
     'ooo-expenses': 0.15,
   };
@@ -312,29 +342,32 @@ const usnCalc = () => {
   // через объект
   typeTax[formUsn.typeTax.value]();
 
-  formUsn.addEventListener('input', () => {
-    typeTax[formUsn.typeTax.value]();
+  formUsn.addEventListener(
+    'input',
+    debounceTimer(() => {
+      typeTax[formUsn.typeTax.value]();
 
-    const income = formUsn.income.value;
-    const expenses = formUsn.expenses.value;
-    const сontributions = formUsn.сontributions.value;
-    const property = formUsn.property.value;
+      const income = +formUsn.income.value;
+      const expenses = +formUsn.expenses.value;
+      const сontributions = +formUsn.сontributions.value;
+      const property = +formUsn.property.value;
 
-    let profit = income - сontributions;
+      let profit = income - сontributions;
 
-    if (formUsn.typeTax.value !== 'income') {
-      profit -= expenses;
-    }
+      if (formUsn.typeTax.value !== 'income') {
+        profit -= expenses;
+      }
 
-    const taxBigIncome = income > LIMIT ? (profit - LIMIT) * 0.01 : 0;
-    const sum = profit - (taxBigIncome < 0 ? 0 : taxBigIncome);
-    const tax = sum * percent[formUsn.typeTax.value];
-    const taxProperty = property * 0.02;
+      const taxBigIncome = income > LIMIT ? (profit - LIMIT) * 0.01 : 0;
+      const sum = profit - (taxBigIncome < 0 ? 0 : taxBigIncome);
+      const tax = sum * percent[formUsn.typeTax.value];
+      const taxProperty = property * 0.02;
 
-    resultTaxTotal.textContent = tax >= 0 ? formatNumber(tax) : 0;
-    resultTaxProperty.textContent =
-      taxProperty >= 0 ? formatNumber(taxProperty) : 0;
-  });
+      resultTaxTotal.textContent = tax >= 0 ? formatNumber(tax) : 0;
+      resultTaxProperty.textContent =
+        taxProperty >= 0 ? formatNumber(taxProperty) : 0;
+    }, 500),
+  );
 
   calcBtnReset.addEventListener('click', () => {
     formUsn.reset();
@@ -345,3 +378,40 @@ const usnCalc = () => {
   });
 };
 usnCalc();
+
+//* Калькулятор Налоговый вычет 13%
+const taxReturnCalc = () => {
+  const taxReturn = document.querySelector('.tax-return');
+  const formTaxReturn = taxReturn.querySelector('.calc__form');
+  const calcBtnReset = taxReturn.querySelector('.calc__btn-reset');
+
+  const resultTax = taxReturn.querySelectorAll('.result__tax');
+  const resultTaxNdfl = taxReturn.querySelector('.result__tax_ndfl');
+  const resultTaxPossible = taxReturn.querySelector('.result__tax_possible');
+  const resultTaxDeduction = taxReturn.querySelector('.result__tax_deduction');
+
+  formTaxReturn.addEventListener('input', debounceTimer(() => {
+    const income = +formTaxReturn.income.value;
+    const expenses = +formTaxReturn.expenses.value;
+    const sumExpenses = +formTaxReturn.sumExpenses.value;
+
+    const ndfl = income * 0.13;
+    const possibleDeduction =
+      expenses < sumExpenses ? expenses * 0.13 : sumExpenses * 0.13;
+    const deduction = possibleDeduction < ndfl ? possibleDeduction : ndfl;
+
+    resultTaxNdfl.textContent = ndfl >= 0 ? formatNumber(ndfl) : 0;
+    resultTaxPossible.textContent =
+      possibleDeduction >= 0 ? formatNumber(possibleDeduction) : 0;
+    resultTaxDeduction.textContent =
+      deduction >= 0 ? formatNumber(deduction) : 0;
+  }, 500));
+
+  calcBtnReset.addEventListener('click', () => {
+    formTaxReturn.reset();
+    resultTax.forEach((element) => {
+      element.textContent = formatNumber(0);
+    });
+  });
+};
+taxReturnCalc();
