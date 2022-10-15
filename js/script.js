@@ -136,47 +136,50 @@ const selfEmploymentCalc = () => {
 
   checkCompensation();
 
-  formSelfEmployment.addEventListener(
-    'input',
-    debounceTimer(() => {
-      const individual = +formSelfEmployment.individuals.value; // физ. лицо
-      const legal = +formSelfEmployment.legal.value; // юр. лицо
-      const resIndividual = individual * 0.04; // Налог на доход с физ. лиц
-      const resLegal = legal * 0.06; // Налог на доход с юр. лиц
+  const handlerForm = () => {
+    const individual = +formSelfEmployment.individuals.value; // физ. лицо
+    const legal = +formSelfEmployment.legal.value; // юр. лицо
+    const resIndividual = individual * 0.04; // Налог на доход с физ. лиц
+    const resLegal = legal * 0.06; // Налог на доход с юр. лиц
 
-      checkCompensation();
-
-      const tax = resIndividual + resLegal; // Общий налог
-
-      formSelfEmployment.compensation.value =
-        +formSelfEmployment.compensation.value > 10_000
-          ? 10_000
-          : formSelfEmployment.compensation.value;
-
-      const benefit = +formSelfEmployment.compensation.value; // Налоговый вычет
-      const resBenefit = individual * 0.01 + legal * 0.02;
-      const finalBenefit = benefit - resBenefit > 0 ? benefit - resBenefit : 0;
-      const realBenefit = benefit - finalBenefit;
-      const finalTax = tax - realBenefit; // Окончательный налог
-
-      resultTaxTotal.textContent = tax >= 0 ? formatNumber(tax) : 0;
-      resultTaxCompensation.textContent =
-        realBenefit >= 0 ? formatNumber(realBenefit) : 0;
-      resultTaxRestCompensation.textContent =
-        formSelfEmployment.compensation.value >= 0
-          ? formatNumber(formSelfEmployment.compensation.value)
-          : 0;
-      resultTaxResult.textContent = finalTax >= 0 ? formatNumber(finalTax) : 0;
-    }, 500),
-  );
-
-  calcBtnReset.addEventListener('click', () => {
-    formSelfEmployment.reset();
-    resultTax.forEach((element) => {
-      element.textContent = formatNumber(0);
-    });
     checkCompensation();
+
+    const tax = resIndividual + resLegal; // Общий налог
+
+    formSelfEmployment.compensation.value =
+      +formSelfEmployment.compensation.value > 10_000
+        ? 10_000
+        : formSelfEmployment.compensation.value;
+
+    const benefit = +formSelfEmployment.compensation.value; // Налоговый вычет
+    const resBenefit = individual * 0.01 + legal * 0.02;
+    const finalBenefit = benefit - resBenefit > 0 ? benefit - resBenefit : 0;
+    const realBenefit = benefit - finalBenefit;
+    const finalTax = tax - realBenefit; // Окончательный налог
+
+    resultTaxTotal.textContent = tax >= 0 ? formatNumber(tax) : 0;
+    resultTaxCompensation.textContent =
+      realBenefit >= 0 ? formatNumber(realBenefit) : 0;
+    resultTaxRestCompensation.textContent =
+      formSelfEmployment.compensation.value >= 0
+        ? formatNumber(formSelfEmployment.compensation.value)
+        : 0;
+    resultTaxResult.textContent = finalTax >= 0 ? formatNumber(finalTax) : 0;
+  };
+
+  formSelfEmployment.addEventListener('reset', () => {
+    setTimeout(handlerForm);
   });
+
+  formSelfEmployment.addEventListener('input', debounceTimer(handlerForm, 300));
+
+  // calcBtnReset.addEventListener('click', () => {
+  //   formSelfEmployment.reset();
+  //   resultTax.forEach((element) => {
+  //     element.textContent = formatNumber(0);
+  //   });
+  //   checkCompensation();
+  // });
 };
 selfEmploymentCalc();
 
